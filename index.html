@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kartkówka SQL – WHERE, operatory i funkcje agregujące</title>
+<style>
+    :root {
+        --bg: #f4f6f8;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #d1d5db;
+        --accent: #1f4b7a;
+        --warn-bg: #fff7ed;
+        --warn-border: #f59e0b;
+        --danger-bg: #fef2f2;
+        --danger-border: #ef4444;
+        --ok-bg: #f0fdf4;
+        --ok-border: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+    }
+
+    .page {
+        max-width: 1050px;
+        margin: 24px auto;
+        background: var(--card);
+        padding: 28px 34px;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 30px rgba(0,0,0,.06);
+    }
+
+    h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+    }
+
+    h2 {
+        margin-top: 30px;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 6px;
+        font-size: 21px;
+    }
+
+    h3 {
+        font-size: 17px;
+        margin-bottom: 8px;
+    }
+
+    .subtitle, .muted { color: var(--muted); }
+
+    .warning {
+        margin: 20px 0;
+        padding: 16px 18px;
+        background: var(--warn-bg);
+        border: 2px solid var(--warn-border);
+    }
+
+    .warning strong {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .student-box {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 12px;
+        margin: 18px 0;
+    }
+
+    label {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    input[type="text"], input[type="number"], textarea, select {
+        width: 100%;
+        padding: 9px 10px;
+        border: 1px solid #9ca3af;
+        border-radius: 4px;
+        font: inherit;
+        background: #ffffff !important;
+        color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
+        caret-color: #111111;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #6b7280 !important;
+        opacity: 1;
+    }
+
+    textarea {
+        min-height: 84px;
+        resize: vertical;
+        font-family: Consolas, "Courier New", monospace;
+    }
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin: 18px 0;
+    }
+
+    button {
+        border: 0;
+        border-radius: 5px;
+        padding: 11px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+        font-size: 15px;
+    }
+
+    button.secondary {
+        background: #4b5563;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+        opacity: .5;
+    }
+
+    .status {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        background: #f9fafb;
+        font-weight: 700;
+    }
+
+    .task {
+        border: 1px solid var(--border);
+        padding: 16px 18px;
+        margin: 14px 0;
+        break-inside: avoid;
+    }
+
+    .points {
+        float: right;
+        color: var(--muted);
+        font-weight: 700;
+    }
+
+    .option {
+        display: block;
+        padding: 4px 0;
+        font-weight: 400;
+    }
+
+    code, pre {
+        font-family: Consolas, "Courier New", monospace;
+    }
+
+    code {
+        background: #f3f4f6;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+
+    pre {
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+    }
+
+    th, td {
+        border: 1px solid #9ca3af;
+        padding: 7px 8px;
+        text-align: left;
+    }
+
+    th {
+        background: #f3f4f6;
+    }
+
+    .finish-box {
+        margin-top: 28px;
+        padding: 18px;
+        border: 2px solid var(--ok-border);
+        background: var(--ok-bg);
+    }
+
+    .report {
+        display: none;
+        margin-top: 28px;
+    }
+
+    .report.visible {
+        display: block;
+    }
+
+    .report-table td:first-child {
+        width: 170px;
+        font-weight: 700;
+    }
+
+    .events-table {
+        font-size: 13px;
+    }
+
+    .events-table td:nth-child(1) { width: 85px; }
+    .events-table td:nth-child(2) { width: 190px; }
+
+    .event-zero {
+        padding: 12px;
+        border: 1px solid var(--ok-border);
+        background: var(--ok-bg);
+        font-weight: 700;
+    }
+
+    .small {
+        font-size: 13px;
+    }
+
+    .hidden { display: none !important; }
+
+    .answer-summary {
+        white-space: pre-wrap;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    @media (max-width: 760px) {
+        .page { margin: 0; padding: 18px; }
+        .student-box { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+        body { background: white; }
+        .page {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            box-shadow: none;
+        }
+        .no-print { display: none !important; }
+        .report { display: block !important; }
+        .task { page-break-inside: avoid; }
+        textarea {
+            min-height: 54px;
+            overflow: visible;
+        }
+        input, textarea, select {
+            border: 1px solid #777;
+            color: #000;
+            -webkit-text-fill-color: #000;
+            opacity: 1;
+        }
+        h2 { page-break-after: avoid; }
+    }
+</style>
+</head>
+
+<body>
+<div class="page">
+    <header>
+        <h1>Kartkówka – SQL</h1>
+        <div class="subtitle">WHERE, operatory matematyczne i logiczne, BETWEEN, IN, funkcje agregujące</div>
+    </header>
+
+    <div class="warning">
+        <strong>UWAGA – podczas kartkówki nie wykonuj żadnych podejrzanych działań.</strong>
+        Strona rejestruje i raportuje m.in. opuszczenie karty lub okna, utratę aktywności okna,
+        kopiowanie, wycinanie, wklejanie, użycie prawego przycisku myszy, wybrane skróty klawiaturowe
+        oraz ponowne wczytanie strony. Wszystkie zarejestrowane zdarzenia zostaną dołączone do wydruku PDF.
+    </div>
+
+    <div class="student-box">
+        <div>
+            <label for="studentName">Imię i nazwisko</label>
+            <input id="studentName" type="text" autocomplete="off">
+        </div>
+        <div>
+            <label for="studentClass">Klasa</label>
+            <input id="studentClass" type="text" autocomplete="off">
+        </div>
+        <div>
+            <label for="studentDate">Data</label>
+            <input id="studentDate" type="text" readonly>
+        </div>
+    </div>
+
+    <div class="controls no-print">
+        <span class="status" id="eventCounter">Zdarzenia: 0</span>
+    </div>
+
+    <p class="small muted">
+        Pracuj tylko w tym oknie. Po zakończeniu kliknij
+        <strong>„Zakończ i przygotuj PDF”</strong>, a następnie wybierz drukowanie do pliku PDF.
+    </p>
+
+    <section id="testContent">
+        <h2>Dane do zadań</h2>
+        <p>W zadaniach korzystaj z tabeli <code>produkty</code>:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>nazwa</th>
+                    <th>kategoria</th>
+                    <th>cena</th>
+                    <th>ilosc</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Klawiatura</td><td>Akcesoria</td><td>120</td><td>8</td></tr>
+                <tr><td>2</td><td>Mysz</td><td>Akcesoria</td><td>80</td><td>15</td></tr>
+                <tr><td>3</td><td>Monitor</td><td>Monitory</td><td>900</td><td>4</td></tr>
+                <tr><td>4</td><td>Laptop</td><td>Komputery</td><td>3500</td><td>3</td></tr>
+                <tr><td>5</td><td>Pendrive</td><td>Pamięć</td><td>50</td><td>20</td></tr>
+                <tr><td>6</td><td>Dysk SSD</td><td>Pamięć</td><td>300</td><td>7</td></tr>
+                <tr><td>7</td><td>Słuchawki</td><td>Akcesoria</td><td>200</td><td>10</td></tr>
+                <tr><td>8</td><td>Drukarka</td><td>Drukarki</td><td>650</td><td>2</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Zadania</h2>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>1. Wybierz poprawny warunek WHERE.</h3>
+            <p>Chcemy wyświetlić produkty, których cena jest większa niż 100 zł.</p>
+            <label class="option"><input type="radio" name="q1" value="A"> A. <code>WHERE cena &lt; 100</code></label>
+            <label class="option"><input type="radio" name="q1" value="B"> B. <code>WHERE cena &gt; 100</code></label>
+            <label class="option"><input type="radio" name="q1" value="C"> C. <code>WHERE cena = 100</code></label>
+            <label class="option"><input type="radio" name="q1" value="D"> D. <code>WHERE cena &gt;= 100 AND cena &lt;= 100</code></label>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>2. Operatory matematyczne.</h3>
+            <p>Uzupełnij zapytanie tak, aby dla każdego produktu obliczało wartość magazynową: <strong>cena × ilość</strong>.</p>
+            <pre>SELECT nazwa, cena ______ ilosc AS wartosc
+FROM produkty;</pre>
+            <input type="text" name="q2" autocomplete="off" placeholder="Wpisz brakujący operator">
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>3. Operatory logiczne.</h3>
+            <p>Który warunek wybierze produkty z kategorii <strong>Akcesoria</strong>, których cena jest mniejsza niż 150 zł?</p>
+            <label class="option"><input type="radio" name="q3" value="A"> A. <code>WHERE kategoria = 'Akcesoria' OR cena &lt; 150</code></label>
+            <label class="option"><input type="radio" name="q3" value="B"> B. <code>WHERE kategoria = 'Akcesoria' AND cena &lt; 150</code></label>
+            <label class="option"><input type="radio" name="q3" value="C"> C. <code>WHERE NOT kategoria = 'Akcesoria'</code></label>
+            <label class="option"><input type="radio" name="q3" value="D"> D. <code>WHERE cena &lt; 150 AND kategoria &lt; 'Akcesoria'</code></label>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>4. Filtrowanie danych.</h3>
+            <p>Napisz samo wyrażenie <code>WHERE</code>, które wybierze produkty o cenie od 100 do 500 zł włącznie.</p>
+            <textarea name="q4" placeholder="WHERE ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>5. Filtrowanie według kilku wartości.</h3>
+            <p>Uzupełnij zapytanie tak, aby wybrać tylko produkty z kategorii <strong>Akcesoria</strong>, <strong>Pamięć</strong> lub <strong>Monitory</strong>.</p>
+            <pre>SELECT *
+FROM produkty
+WHERE kategoria ________________________________;</pre>
+            <input type="text" name="q5" autocomplete="off" placeholder="Wpisz brakujący fragment">
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>6. Prawda / Fałsz.</h3>
+            <table>
+                <tr>
+                    <th>Zdanie</th>
+                    <th>Prawda</th>
+                    <th>Fałsz</th>
+                </tr>
+                <tr>
+                    <td><code>BETWEEN 100 AND 500</code> obejmuje także wartości 100 i 500.</td>
+                    <td><input type="radio" name="q6a" value="P"></td>
+                    <td><input type="radio" name="q6a" value="F"></td>
+                </tr>
+                <tr>
+                    <td>Operator <code>AND</code> oznacza, że wystarczy spełnić jeden z podanych warunków.</td>
+                    <td><input type="radio" name="q6b" value="P"></td>
+                    <td><input type="radio" name="q6b" value="F"></td>
+                </tr>
+                <tr>
+                    <td><code>IN</code> pozwala sprawdzić, czy wartość należy do podanej listy.</td>
+                    <td><input type="radio" name="q6c" value="P"></td>
+                    <td><input type="radio" name="q6c" value="F"></td>
+                </tr>
+                <tr>
+                    <td><code>NOT</code> służy do zaprzeczenia warunku.</td>
+                    <td><input type="radio" name="q6d" value="P"></td>
+                    <td><input type="radio" name="q6d" value="F"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="task">
+            <span class="points">3 pkt</span>
+            <h3>7. Funkcje agregujące – dopasowanie.</h3>
+            <p>Wpisz obok każdej funkcji literę odpowiadającą jej działaniu.</p>
+            <p>
+                A – oblicza średnią &nbsp;&nbsp;
+                B – liczy rekordy &nbsp;&nbsp;
+                C – zwraca najmniejszą wartość &nbsp;&nbsp;
+                D – sumuje wartości &nbsp;&nbsp;
+                E – zwraca największą wartość
+            </p>
+            <table>
+                <tr><td><code>COUNT()</code></td><td><input type="text" name="q7_count" maxlength="1" autocomplete="off"></td></tr>
+                <tr><td><code>SUM()</code></td><td><input type="text" name="q7_sum" maxlength="1" autocomplete="off"></td></tr>
+                <tr><td><code>AVG()</code></td><td><input type="text" name="q7_avg" maxlength="1" autocomplete="off"></td></tr>
+                <tr><td><code>MIN()</code></td><td><input type="text" name="q7_min" maxlength="1" autocomplete="off"></td></tr>
+                <tr><td><code>MAX()</code></td><td><input type="text" name="q7_max" maxlength="1" autocomplete="off"></td></tr>
+            </table>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>8. Zapytanie SQL.</h3>
+            <p>Napisz zapytanie, które policzy liczbę wszystkich produktów w tabeli <code>produkty</code>.</p>
+            <textarea name="q8" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>9. Zapytanie SQL z warunkiem.</h3>
+            <p>Napisz zapytanie, które obliczy średnią cenę produktów z kategorii <strong>Akcesoria</strong>.</p>
+            <textarea name="q9" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>10. Zapytanie SQL.</h3>
+            <p>Napisz zapytanie, które zwróci najwyższą cenę produktu.</p>
+            <textarea name="q10" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">3 pkt</span>
+            <h3>11. Zapytanie SQL z działaniem matematycznym.</h3>
+            <p>Napisz zapytanie, które obliczy łączną wartość wszystkich produktów w magazynie. Wartość jednego rodzaju produktu obliczamy jako <code>cena * ilosc</code>.</p>
+            <textarea name="q11" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">3 pkt</span>
+            <h3>12. Filtrowanie danych.</h3>
+            <p>
+                Napisz zapytanie wyświetlające wszystkie dane produktów,
+                których cena wynosi od <strong>100 do 500 zł</strong> włącznie.
+            </p>
+            <textarea name="q12" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">3 pkt</span>
+            <h3>13. Znajdź i popraw błędy.</h3>
+            <p>Poniższe zapytanie zawiera błędy. Zapisz je poprawnie.</p>
+            <pre>SELECT AVG cena
+FROM produkty
+WHERE kategoria IN 'Akcesoria', 'Pamięć'
+AND cena BETWEEN 80 TO 300;</pre>
+            <textarea name="q13" placeholder="Zapisz poprawne zapytanie"></textarea>
+        </div>
+
+        <div class="task">
+            <span class="points">2 pkt</span>
+            <h3>14. Odczyt wyniku zapytania.</h3>
+            <p>Na podstawie tabeli na początku kartkówki podaj wynik:</p>
+            <pre>SELECT SUM(ilosc)
+FROM produkty
+WHERE kategoria = 'Akcesoria';</pre>
+            <input type="text" name="q14" autocomplete="off" placeholder="Wynik">
+        </div>
+
+        <div class="finish-box no-print">
+            
+            <p>
+                Sprawdź, czy odpowiedziałeś/aś na wszystkie pytania.
+                Po kliknięciu przycisku odpowiedzi zostaną zablokowane, raport zostanie przygotowany i otworzy się okno drukowania. Wybierz opcję „Zapisz jako PDF”.
+            </p>
+            <button id="finishBtn" type="button">Zakończ i przygotuj PDF</button>
+            
+        </div>
+    </section>
+
+    <section id="report" class="report">
+        <h2>Raport z kartkówki</h2>
+        <table class="report-table">
+            <tr><td>Uczeń:</td><td id="rName"></td></tr>
+            <tr><td>Klasa:</td><td id="rClass"></td></tr>
+            <tr><td>Data:</td><td id="rDate"></td></tr>
+            <tr><td>Rozpoczęcie:</td><td id="rStart"></td></tr>
+            <tr><td>Zakończenie:</td><td id="rEnd"></td></tr>
+            <tr><td>Czas pracy:</td><td id="rDuration"></td></tr>
+            <tr><td>Liczba zdarzeń:</td><td id="rEventCount"></td></tr>
+        </table>
+
+        <h2>Odpowiedzi ucznia</h2>
+        <div id="answersSummary"></div>
+
+        <h2>Raport zarejestrowanych zdarzeń</h2>
+        <p class="small">
+            Poniżej znajduje się lista wszystkich zarejestrowanych podczas kartkówki zdarzeń.
+        </p>
+        <div id="eventReport"></div>
+    </section>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    const finishBtn = document.getElementById("finishBtn");
+    const eventCounterEl = document.getElementById("eventCounter");
+    const reportEl = document.getElementById("report");
+
+    let finished = false;
+    const startTime = new Date();
+    let endTime = null;
+    let events = [];
+    let suppressMonitoring = false;
+    let lastEvent = { type: "", time: 0 };
+
+    document.getElementById("studentDate").value =
+        new Date().toLocaleDateString("pl-PL");
+
+    function addEvent(type, details = "") {
+        if (finished || suppressMonitoring) return;
+
+        const now = Date.now();
+        if (lastEvent.type === type && now - lastEvent.time < 900) return;
+        lastEvent = { type, time: now };
+
+        events.push({
+            time: new Date().toLocaleTimeString("pl-PL"),
+            type,
+            details
+        });
+
+        eventCounterEl.textContent = `Zdarzenia: ${events.length}`;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            addEvent("Opuszczenie karty / ukrycie strony", "Strona przestała być widoczna.");
+        }
+    });
+
+    window.addEventListener("blur", () => {
+        setTimeout(() => {
+            if (!document.hidden && !finished && !suppressMonitoring) {
+                addEvent("Utrata aktywności okna", "Aktywne stało się inne okno lub element systemu.");
+            }
+        }, 100);
+    });
+
+    document.addEventListener("copy", () => {
+        const text = window.getSelection()?.toString() || "";
+        addEvent("Kopiowanie", text ? `Skopiowano zaznaczony tekst (${text.length} znaków).` : "Wykryto kopiowanie.");
+    });
+
+    document.addEventListener("cut", () => {
+        addEvent("Wycinanie", "Wykryto użycie operacji wycinania.");
+    });
+
+    document.addEventListener("paste", (e) => {
+        let len = 0;
+        try {
+            len = (e.clipboardData?.getData("text") || "").length;
+        } catch (_) {}
+        addEvent("Wklejanie", len ? `Wklejono tekst (${len} znaków).` : "Wykryto wklejanie.");
+    });
+
+    document.addEventListener("contextmenu", () => {
+        addEvent("Menu kontekstowe / prawy przycisk myszy", "Wykryto otwarcie menu kontekstowego.");
+    });
+
+    document.addEventListener("keydown", (e) => {
+        const k = e.key.toLowerCase();
+        const ctrl = e.ctrlKey || e.metaKey;
+
+        if (e.key === "F12") {
+            addEvent("Skrót klawiaturowy", "F12");
+        } else if (ctrl && e.shiftKey && ["i", "j", "c"].includes(k)) {
+            addEvent("Skrót klawiaturowy", `${e.metaKey ? "Cmd" : "Ctrl"}+Shift+${k.toUpperCase()}`);
+        } else if (ctrl && ["u", "l", "t", "n", "w", "r"].includes(k)) {
+            addEvent("Skrót klawiaturowy", `${e.metaKey ? "Cmd" : "Ctrl"}+${k.toUpperCase()}`);
+        } else if (e.key === "PrintScreen") {
+            addEvent("Przycisk PrintScreen", "Wykryto naciśnięcie PrintScreen.");
+        }
+    });
+
+    function answerText(name, fallback = "brak odpowiedzi") {
+        const els = document.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+        if (!els.length) return fallback;
+
+        for (const el of els) {
+            if ((el.type === "radio" || el.type === "checkbox") && el.checked) {
+                return el.value;
+            }
+            if (el.type !== "radio" && el.type !== "checkbox" && el.value.trim()) {
+                return el.value.trim();
+            }
+        }
+
+        return fallback;
+    }
+
+    function buildAnswersSummary() {
+        const rows = [
+            ["1", answerText("q1")],
+            ["2", answerText("q2")],
+            ["3", answerText("q3")],
+            ["4", answerText("q4")],
+            ["5", answerText("q5")],
+            ["6a", answerText("q6a")],
+            ["6b", answerText("q6b")],
+            ["6c", answerText("q6c")],
+            ["6d", answerText("q6d")],
+            ["7 – COUNT", answerText("q7_count")],
+            ["7 – SUM", answerText("q7_sum")],
+            ["7 – AVG", answerText("q7_avg")],
+            ["7 – MIN", answerText("q7_min")],
+            ["7 – MAX", answerText("q7_max")],
+            ["8", answerText("q8")],
+            ["9", answerText("q9")],
+            ["10", answerText("q10")],
+            ["11", answerText("q11")],
+            ["12", answerText("q12")],
+            ["13", answerText("q13")],
+            ["14", answerText("q14")]
+        ];
+
+        const table = document.createElement("table");
+        table.className = "report-table";
+
+        rows.forEach(([nr, ans]) => {
+            const tr = document.createElement("tr");
+            const td1 = document.createElement("td");
+            const td2 = document.createElement("td");
+
+            td1.textContent = `Zadanie ${nr}`;
+            td2.textContent = ans;
+            td2.className = "answer-summary";
+
+            tr.append(td1, td2);
+            table.appendChild(tr);
+        });
+
+        const container = document.getElementById("answersSummary");
+        container.innerHTML = "";
+        container.appendChild(table);
+    }
+
+    function buildEventReport() {
+        const container = document.getElementById("eventReport");
+        container.innerHTML = "";
+
+        if (events.length === 0) {
+            const div = document.createElement("div");
+            div.className = "event-zero";
+            div.textContent = "Nie zarejestrowano zdarzeń.";
+            container.appendChild(div);
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "events-table";
+
+        const thead = document.createElement("thead");
+        thead.innerHTML = "<tr><th>Czas</th><th>Zdarzenie</th><th>Szczegóły</th></tr>";
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        events.forEach(ev => {
+            const tr = document.createElement("tr");
+
+            [ev.time, ev.type, ev.details || "—"].forEach(value => {
+                const td = document.createElement("td");
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.appendChild(table);
+    }
+
+    function lockAnswers() {
+        document.querySelectorAll("#testContent input, #testContent textarea, #testContent select").forEach(el => {
+            el.disabled = true;
+        });
+    }
+
+    finishBtn.addEventListener("click", () => {
+        if (finished) return;
+
+        const name = document.getElementById("studentName").value.trim();
+        const cls = document.getElementById("studentClass").value.trim();
+
+        if (!name || !cls) {
+            alert("Wpisz imię i nazwisko oraz klasę.");
+            return;
+        }
+
+        const ok = confirm("Czy na pewno zakończyć kartkówkę? Po zakończeniu nie będzie można zmienić odpowiedzi.");
+        if (!ok) return;
+
+        finished = true;
+        endTime = new Date();
+
+        document.getElementById("rName").textContent = name;
+        document.getElementById("rClass").textContent = cls;
+        document.getElementById("rDate").textContent = document.getElementById("studentDate").value;
+        document.getElementById("rStart").textContent = startTime.toLocaleString("pl-PL");
+        document.getElementById("rEnd").textContent = endTime.toLocaleString("pl-PL");
+
+        const durationMs = endTime - startTime;
+        const mins = Math.floor(durationMs / 60000);
+        const secs = Math.floor((durationMs % 60000) / 1000);
+
+        document.getElementById("rDuration").textContent = `${mins} min ${secs} s`;
+        document.getElementById("rEventCount").textContent = events.length;
+
+        buildAnswersSummary();
+        buildEventReport();
+        lockAnswers();
+
+        reportEl.classList.add("visible");
+        finishBtn.disabled = true;
+
+        suppressMonitoring = true;
+
+        // Wymuszamy przeliczenie układu po pokazaniu raportu,
+        // a następnie od razu otwieramy systemowe okno drukowania.
+        void reportEl.offsetHeight;
+
+        window.print();
+
+        setTimeout(() => {
+            suppressMonitoring = false;
+        }, 1000);
+    });
+
+    window.addEventListener("beforeprint", () => {
+        suppressMonitoring = true;
+    });
+
+    window.addEventListener("afterprint", () => {
+        suppressMonitoring = false;
+    });
+})();
+</script>
+</body>
+</html>
